@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} - 技术社区{% endblock %}
+{% block content %}
+<div class="row">
+    <!-- 左侧：导航 + 板块（移动端移到页面底层，作快捷入口；桌面保持左侧） -->
+    <div class="col-lg-2 order-lg-1 order-mobile-boards">
+        <div class="sidebar mb-3 d-none d-lg-block">
+            <div class="list-group">
+                <a href="{{ url_for('index') }}" class="list-group-item list-group-item-action {% if not board_id %}active{% endif %}">
+                    <i class="bi bi-house-door nav-icon"></i> 首页
+                </a>
+                <a href="{{ url_for('user_profile', user_id=current_user.user_id) }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-person nav-icon"></i> 我的
+                </a>
+                <a href="{{ url_for('messages_home') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-envelope nav-icon"></i> 我的消息
+                    <span class="badge bg-danger rounded-pill ms-1 msg-total-badge"{% if unread_msg_count + unread_count <= 0 %} style="display:none"{% endif %}>{{ unread_msg_count + unread_count }}</span>
+                </a>
+                <a href="{{ url_for('my_favorites') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-star nav-icon"></i> 我的收藏
+                </a>
+            </div>
+        </div>
+        <div class="sidebar">
+            <div class="fw-bold small text-muted mb-2" style="padding:0 12px;">板块分类</div>
+            <div class="list-group boards-mobile">
+                {% for b in boards %}
+                <a href="{{ url_for('index', board=b.board_id) }}"
+                   class="list-group-item list-group-item-action {% if board_id == b.board_id %}active{% endif %}">
+                    <span class="board-ico {{ b.board_name|board_color }}">{{ b.board_name[0] }}</span>
+                    <span>{{ b.board_name }}</span>
+                </a>
+                {% endfor %}
+                {% if current_user %}
+                <a href="{{ url_for('board_apply') }}" class="list-group-item list-group-item-action text-primary board-apply-row">
+                    <i class="bi bi-plus-circle nav-icon"></i> 申请新板块
+                </a>
+                <a href="{{ url_for('my_board_applications') }}" class="list-group-item list-group-item-action board-apply-row">
+                    <i class="bi bi-list-check nav-icon"></i> 我的申请
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 中间：帖子列表（移动端顶层信息流） -->
+    <div class="col-lg-7 order-lg-2 order-mobile-list">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">{{ title }}</h5>
+        </div>
+
+        <!-- 新帖实时提示条（收到 new_post 广播时显示） -->
+        <div id="new-post-banner" class="new-post-banner" style="display:none;">
+            有 <span id="new-post-count">0</span> 条新帖子，<a id="new-post-refresh">点击查看</a>
+        </div>
+        <div id="list-meta" data-board-id="{{ board_id if board_id is not none else '' }}"></div>
+
+        <div id="post-list-area">
+        {% if not posts %}
+        <div class="content-card text-center text-muted py-5" id="post-empty">
+            <i class="bi bi-inbox" style="font-size:48px;"></i>
+            <p class="mt-3">暂无帖子，来发第一帖吧</p>
+        </div>
+        {% endif %}
+
+        {% for p in posts %}
+        <div class="post-card" data-post-card="{{ p.post_id }}">
+            {% if p.image_path %}
+            <a href="{{ url_for('post_detail', post_id=p.post_id) }}" class="d-inline-block mb-1">
+                <img src="{{ url_for('serve_post_image', filename=p.image_path|post_thumb) }}" alt="帖子配图" loading="lazy" class="rounded border" style="max-width:300px;max-height:180px;object-fit:cover;">
+            </a>
+            {% endif %}
+            <!-- 作者行：头像 + 昵称 + 关注按钮（匿名帖/本人/拉黑不显示关注按钮） -->
+            <div class="d-flex align-items-center post-card-author">
+                {% if p.author_id %}
+                <a href="{{ url_for('user_profile', user_id=p.author_id) }}" class="me-2 post-author-link">
+                    {% if p.author_avatar %}
+                    <img src="{{ url_for('serve_avatar', filename=p.author_avatar) }}" class="rounded-circle post-avatar" alt="{{ p.author }}">
+                    {% else %}
+                    <span class="rounded-circle bg-secondary text-white post-avatar post-avatar-default">{{ p.author[0] }}</span>
+                    {% endif %}
+                </a>
+                <a href="{{ url_for('user_profile', user_id=p.author_id) }}" class="text-decoration-none text-dark small fw-medium post-author-name">{{ p.author }}</a>
+                {% if p.author_id != current_user.user_id and not p.is_blocked %}
+                <button type="button"
+                        class="btn btn-sm btn-follow-post ms-auto {{ 'btn-secondary' if p.is_following else 'btn-primary' }}"
+                        data-target-id="{{ p.author_id }}"
+                        data-state="{{ 'following' if p.is_following else 'not' }}">{{ '已关注' if p.is_following else '关注' }}</button>
+                {% endif %}
+                {% else %}
+                <span class="text-muted small"><i class="bi bi-incognito me-1"></i>匿名用户</span>
+                {% endif %}
+            </div>
+            <!-- 标题行：18px 粗体，最多 2 行截断 -->
+            <div class="mt-1">
+                {% if p.is_top %}<span class="tag-top">置顶</span>{% endif %}
+                {% if p.is_essence %}<span class="tag-essence">加精</span>{% endif %}
+                {% if p.is_private %}<span class="tag-private">私密</span>{% endif %}
+                <a href="{{ url_for('post_detail', post_id=p.post_id) }}" class="post-title post-card-title">{{ p.title }}</a>
+            </div>
+            <!-- 摘要行：Markdown 去标签纯文本，最多 2 行截断 -->
+            {% if p.summary %}
+            <div class="post-summary">{{ p.summary }}</div>
+            {% endif %}
+            <!-- 互动栏：评论数 + 点赞数（浏览数不再展示） -->
+            <div class="d-flex align-items-center post-card-actions mt-1">
+                <span class="post-meta"><i class="bi bi-chat"></i> {{ p.reply_count }}</span>
+                <span class="post-meta"><i class="bi bi-hand-thumbs-up"></i> {{ p.like_count }}</span>
+            </div>
+        </div>
+        {% endfor %}
+        </div>
+
+        {% if total_pages > 1 %}
+        <nav class="mt-3">
+            <ul class="pagination justify-content-center">
+                {% if page > 1 %}
+                <li class="page-item"><a class="page-link" href="?page={{ page - 1 }}{% if board_id %}&board={{ board_id }}{% endif %}">上一页</a></li>
+                {% endif %}
+                <li class="page-item disabled"><a class="page-link" href="#">第 {{ page }}/{{ total_pages }} 页</a></li>
+                {% if page < total_pages %}
+                <li class="page-item"><a class="page-link" href="?page={{ page + 1 }}{% if board_id %}&board={{ board_id }}{% endif %}">下一页</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+
+    <!-- 右侧：热门（移动端隐藏，信息密度优先） -->
+    <div class="col-lg-3 order-lg-3 hot-col">
+        <div class="sidebar">
+            <!-- 热门帖子排行榜 -->
+            <div class="hot-rank-card">
+                <div class="fw-bold mb-2 hot-rank-title"><i class="bi bi-fire text-danger"></i> 热门帖子</div>
+                <div class="hot-list">
+                    {% for p in posts[:5] %}
+                    <div class="hot-item">
+                        <span class="hot-rank {% if loop.index <= 3 %}hot-rank-{{ loop.index }}{% else %}hot-rank-n{% endif %}">{{ loop.index }}</span>
+                        <a href="{{ url_for('post_detail', post_id=p.post_id) }}" class="text-decoration-none text-dark hot-item-title">{{ p.title }}</a>
+                        {% if p.like_count > 10 or p.reply_count > 5 %}<span class="hot-badge">热</span>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="hot-more"><a href="/?sort=hot">查看更多 <i class="bi bi-chevron-right"></i></a></div>
+            </div>
+            <!-- 热门板块排行榜 -->
+            <div class="hot-rank-card mt-3">
+                <div class="fw-bold mb-2 hot-rank-title"><i class="bi bi-collection text-primary"></i> 热门板块</div>
+                <div class="hot-list">
+                    {% for b in hot_boards %}
+                    <div class="hot-item">
+                        <span class="hot-rank {% if loop.index <= 3 %}hot-rank-{{ loop.index }}{% else %}hot-rank-n{% endif %}">{{ loop.index }}</span>
+                        <span class="board-ico {{ b.board_name|board_color }}">{{ b.board_name[0] }}</span>
+                        <a href="{{ url_for('index', board=b.board_id) }}" class="text-decoration-none text-dark hot-item-title">{{ b.board_name }}</a>
+                        <span class="hot-count">{{ b.post_count }}帖</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="hot-more"><a href="{{ url_for('boards_page') }}">查看更多 <i class="bi bi-chevron-right"></i></a></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SocketIO 实时更新：新帖提示/局部插入（外部化，见 static/js/index-list.js） ===== -->
+<script src="{{ url_for('static', filename='js/index-list.js') }}?v=1.0.0"></script>
+<!-- ===== 帖子卡片关注按钮 AJAX（外部化，见 static/js/index-card.js） ===== -->
+<script src="{{ url_for('static', filename='js/index-card.js') }}?v=1.0.1"></script>
+{% endblock %}

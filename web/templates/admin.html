@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+{% block title %}管理后台{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-2">
+        <div class="sidebar mb-3">
+            <a href="{{ url_for('index') }}" class="back-link d-block mb-2"><i class="bi bi-arrow-left"></i> 返回首页</a>
+        </div>
+        <div class="sidebar">
+            <div class="fw-bold mb-2 small text-muted">管理</div>
+            <div class="list-group">
+                {% set active_tab = tab %}
+                {% include '_admin_sidebar.html' %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-10">
+        <div class="content-card">
+            {% if tab == 'posts' %}
+            <h5 class="mb-3">帖子管理</h5>
+            <table class="table table-hover">
+                <thead><tr><th>ID</th><th>标题</th><th>作者</th><th>状态</th><th>浏览</th><th>点赞</th><th>操作</th></tr></thead>
+                <tbody>
+                {% for p in posts %}
+                <tr>
+                    <td>{{ p.post_id }}</td>
+                    <td>
+                        {% if p.is_top %}<span class="tag-top">置顶</span>{% endif %}
+                        {% if p.is_essence %}<span class="tag-essence">加精</span>{% endif %}
+                        <a href="{{ url_for('admin_post_detail', post_id=p.post_id) }}">{{ p.title }}</a>
+                    </td>
+                    <td>{{ p.author }}</td>
+                    <td>
+                        {% if p.is_private %}<span class="tag-private">私密</span>{% elif p.is_anonymous %}<span class="tag-anon">匿名</span>{% else %}公开{% endif %}
+                    </td>
+                    <td>{{ p.view_count }}</td>
+                    <td>{{ p.like_count }}</td>
+                    <td>
+                        {% if p.is_private %}
+                        <form method="POST" action="{{ url_for('admin_toggle_post', post_id=p.post_id, field='top') }}" class="d-inline confirm-form"
+                              data-confirm-msg="该帖子是私密帖，置顶后仍仅作者可见，不会出现在公共主页。确定置顶？">
+                            <button class="btn btn-sm btn-outline-primary">{% if p.is_top %}取消置顶{% else %}置顶{% endif %}</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin_toggle_post', post_id=p.post_id, field='essence') }}" class="d-inline confirm-form"
+                              data-confirm-msg="该帖子是私密帖，加精后仍仅作者可见，不会出现在公共主页。确定加精？">
+                            <button class="btn btn-sm btn-outline-warning">{% if p.is_essence %}取消加精{% else %}加精{% endif %}</button>
+                        </form>
+                        {% else %}
+                        <form method="POST" action="{{ url_for('admin_toggle_post', post_id=p.post_id, field='top') }}" class="d-inline confirm-form"
+                              data-confirm-msg="确定{{ '取消置顶' if p.is_top else '置顶' }}？">
+                            <button class="btn btn-sm btn-outline-primary">{% if p.is_top %}取消置顶{% else %}置顶{% endif %}</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin_toggle_post', post_id=p.post_id, field='essence') }}" class="d-inline confirm-form"
+                              data-confirm-msg="确定{{ '取消加精' if p.is_essence else '加精' }}？">
+                            <button class="btn btn-sm btn-outline-warning">{% if p.is_essence %}取消加精{% else %}加精{% endif %}</button>
+                        </form>
+                        {% endif %}
+                        <form method="POST" action="{{ url_for('admin_delete_post_route', post_id=p.post_id) }}" class="d-inline confirm-form"
+                              data-confirm-msg="确定删除？">
+                            <button class="btn btn-sm btn-outline-danger">删除</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+            {% elif tab == 'users' %}
+            <h5 class="mb-3">用户管理</h5>
+            <div class="card mb-3">
+                <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div>
+                        <strong>AI 智能回复</strong>
+                        <span class="text-muted small d-block">开启后，无人回复的帖子将在 10 分钟后由 AI 助手自动回复（系统账号 ai_assistant，不可封禁）</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <form method="POST" action="{{ url_for('admin_ai_reply_toggle') }}" class="d-inline">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="enabled" value="{{ '0' if ai_reply_enabled else '1' }}">
+                            <button class="btn btn-sm {{ 'btn-outline-danger' if ai_reply_enabled else 'btn-success' }}">
+                                {{ '关闭' if ai_reply_enabled else '开启' }}
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin_ai_reply_toggle') }}" class="d-inline">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="enabled" value="{{ '1' if ai_reply_enabled else '1' }}">
+                            <input type="number" name="daily_limit" min="0" max="10000" value="{{ ai_reply_daily_limit }}"
+                                   class="form-control form-control-sm d-inline-block" style="width:100px" title="每日最大 AI 回复数（0=禁用）">
+                            <button class="btn btn-sm btn-outline-secondary">设置每日上限</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <table class="table table-hover">
+                <thead><tr><th>ID</th><th>用户名</th><th>昵称</th><th>角色</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>{{ u.user_id }}</td>
+                    <td>{{ u.username }}</td>
+                    <td>{{ u.nickname }}</td>
+                    <td>{{ '管理员' if u.role == 1 else '普通用户' }}</td>
+                    <td>
+                        {% if u.status == 1 %}
+                            {% if u.ban_until %}
+                                已封禁（禁至 {{ u.ban_until[:16] }}）
+                            {% else %}
+                                已封禁（永久）
+                            {% endif %}
+                            {% if u.ban_reason %}<span class="text-muted small d-block">原因：{{ u.ban_reason }}</span>{% endif %}
+                        {% else %}
+                            正常
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if u.user_id != current_user.user_id and u.role != 1 %}
+                            {% if u.status == 1 %}
+                            <form method="POST" action="{{ url_for('admin_unban_user', user_id=u.user_id) }}" class="d-inline confirm-form"
+                                  data-confirm-msg="确定解封用户 {{ u.username }}？">
+                                <button class="btn btn-sm btn-outline-success">解封</button>
+                            </form>
+                            {% else %}
+                            <button class="btn btn-sm btn-outline-danger btn-ban-open"
+                                    data-action="{{ url_for('admin_ban_user', user_id=u.user_id) }}"
+                                    data-username="{{ u.username }}">封禁</button>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- 共享封禁弹窗：填写原因（必填）与时长（1/7/30天/永久） -->
+            <div class="modal fade" id="ban-modal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="POST" id="ban-form">
+                            <div class="modal-header">
+                                <h5 class="modal-title">封禁用户 <span id="ban-modal-username" class="text-danger"></span></h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">封禁原因（必填）</label>
+                                    <input type="text" name="reason" class="form-control" required maxlength="255"
+                                           placeholder="请填写封禁原因">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">封禁时长</label>
+                                    <select name="days" class="form-select">
+                                        <option value="1">1 天</option>
+                                        <option value="7" selected>7 天</option>
+                                        <option value="30">30 天</option>
+                                        <option value="forever">永久</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                <button type="submit" class="btn btn-danger">确认封禁</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            {% elif tab == 'comments' %}
+            <h5 class="mb-3">评论管理</h5>
+            <table class="table table-hover">
+                <thead><tr><th>ID</th><th>楼层</th><th>内容</th><th>评论者</th><th>所属帖子</th><th>操作</th></tr></thead>
+                <tbody>
+                {% for c in comments %}
+                <tr>
+                    <td>{{ c.comment_id }}</td>
+                    <td>{{ c.floor }}楼</td>
+                    <td>{{ c.content[:50] }}</td>
+                    <td>{{ c.nickname }}</td>
+                    <td>{{ c.post_title }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('admin_delete_comment_route', comment_id=c.comment_id) }}" class="d-inline confirm-form"
+                              data-confirm-msg="确定删除评论？">
+                            <button class="btn btn-sm btn-outline-danger">删除</button>
+                        </form>
+                        {% if c.user_id == ai_assistant_id %}
+                        <form method="POST" action="{{ url_for('admin_revoke_ai_reply', comment_id=c.comment_id) }}" class="d-inline confirm-form"
+                              data-confirm-msg="确定撤回这条 AI 回复？将删除评论与通知，且该帖将永久跳过自动回复。">
+                            <button class="btn btn-sm btn-warning">撤回 AI</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+            {% elif tab == 'reports' %}
+            <h5 class="mb-3">审核队列（待处理）</h5>
+            {% if tickets %}
+            <table class="table table-hover">
+                <thead><tr><th>ID</th><th>类型</th><th>目标内容</th><th>分类</th><th>说明</th><th>提交人</th><th>时间</th><th>操作</th></tr></thead>
+                <tbody>
+                {% for t in tickets %}
+                <tr>
+                    <td>{{ t.id }}</td>
+                    <td>
+                        {% if t.target_type == 'appeal' %}<span class="badge bg-warning text-dark">账号申诉</span>
+                        {% elif t.target_type == 'post' %}<span class="badge bg-danger">举报帖子</span>
+                        {% else %}<span class="badge bg-danger">举报评论</span>{% endif %}
+                    </td>
+                    <td class="text-truncate" style="max-width:240px;" title="{{ t.snippet }}">{{ t.snippet }}</td>
+                    <td>{{ t.category_label }}</td>
+                    <td class="text-truncate" style="max-width:160px;" title="{{ t.description }}">{{ t.description or '-' }}</td>
+                    <td>{{ t.reporter_name }}</td>
+                    <td>{{ t.created_at[:16] }}</td>
+                    <td>
+                        {% if t.target_type == 'appeal' %}
+                        <form method="POST" action="{{ url_for('admin_handle_appeal', ticket_id=t.id) }}" class="d-inline confirm-form"
+                              data-confirm-msg="确定通过该申诉并解封账号？">
+                            <button class="btn btn-sm btn-outline-success" name="action" value="approve">通过（解封）</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin_handle_appeal', ticket_id=t.id) }}" class="d-inline confirm-form"
+                              data-confirm-msg="确定驳回该申诉？">
+                            <button class="btn btn-sm btn-outline-secondary" name="action" value="reject">驳回</button>
+                        </form>
+                        {% else %}
+                        <form method="POST" action="{{ url_for('admin_handle_report', ticket_id=t.id) }}" class="d-inline confirm-form"
+                              data-confirm-msg="确定通过举报并删除该内容？">
+                            <button class="btn btn-sm btn-outline-danger" name="action" value="approve">通过（删除内容）</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin_handle_report', ticket_id=t.id) }}" class="d-inline confirm-form"
+                              data-confirm-msg="确定通过举报并删除内容、封禁发布者？">
+                            <button class="btn btn-sm btn-outline-danger" name="action" value="approve_ban">通过并封禁</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin_handle_report', ticket_id=t.id) }}" class="d-inline confirm-form"
+                              data-confirm-msg="确定驳回该举报？">
+                            <button class="btn btn-sm btn-outline-secondary" name="action" value="reject">驳回</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center py-4">暂无待处理的举报/申诉工单</p>
+            {% endif %}
+            {% if total_pages and total_pages > 1 %}
+            <nav class="mt-3">
+                <ul class="pagination pagination-sm justify-content-center">
+                    <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin', tab='reports', page=page-1) }}">上一页</a>
+                    </li>
+                    <li class="page-item disabled"><span class="page-link">第 {{ page }} / {{ total_pages }} 页（共 {{ total }} 条）</span></li>
+                    <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin', tab='reports', page=page+1) }}">下一页</a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+<!-- 管理端页面脚本（外部化，见 static/js/admin.js）：表单确认、封禁弹窗绑定 -->
+<script src="{{ url_for('static', filename='js/admin.js') }}?v=1.0.0"></script>
+{% endblock %}

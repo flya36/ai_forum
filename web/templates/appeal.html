@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}账号申诉 - 技术社区{% endblock %}
+{% block content %}
+<div class="auth-card">
+    <div class="content-card">
+        <h4 class="text-center mb-2"><i class="bi bi-shield-exclamation text-warning"></i> 账号申诉</h4>
+        <p class="text-center text-muted small mb-4">
+            如果您的账号被封禁，请填写被封禁的<b>用户名</b>与申诉理由，管理员将在审核后处理。
+            处理结果将在您解封后通过站内通知告知。
+        </p>
+        <form method="POST">
+            <div class="mb-3">
+                <label class="form-label">被封禁账号的用户名</label>
+                <input type="text" name="username" class="form-control" required autofocus
+                       value="{{ username or '' }}">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">申诉理由（必填）</label>
+                <textarea name="reason" class="form-control" rows="4" required maxlength="500"
+                          placeholder="请说明申诉理由">{{ reason or '' }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary-custom w-100 py-2">提交申诉</button>
+        </form>
+        <p class="text-center mt-3 mb-0 small text-muted"><a href="{{ url_for('login') }}">返回登录</a></p>
+    </div>
+</div>
+{% endblock %}

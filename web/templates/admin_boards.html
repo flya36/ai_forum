@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}板块管理{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-2">
+        <div class="sidebar mb-3">
+            <a href="{{ url_for('index') }}" class="back-link d-block mb-2"><i class="bi bi-arrow-left"></i> 返回首页</a>
+        </div>
+        <div class="sidebar">
+            <div class="fw-bold mb-2 small text-muted">管理</div>
+            <div class="list-group">
+                {% set active_tab = 'boards' %}
+                {% include '_admin_sidebar.html' %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-10">
+        <div class="content-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">板块管理</h5>
+                <button class="btn btn-primary-custom btn-sm" id="add-board-btn">
+                    <i class="bi bi-plus-lg"></i> 新增板块
+                </button>
+            </div>
+            <table class="table table-hover align-middle">
+                <thead><tr><th>ID</th><th>板块名称</th><th>描述</th><th>帖子数</th><th>操作</th></tr></thead>
+                <tbody>
+                {% for b in boards %}
+                <tr>
+                    <td>{{ b.board_id }}</td>
+                    <td>{{ b.board_name }}</td>
+                    <td class="small text-muted">{{ b.description or '-' }}</td>
+                    <td>{{ b.post_count }}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary edit-board-btn"
+                                data-board-id="{{ b.board_id }}"
+                                data-board-name="{{ b.board_name }}"
+                                data-board-desc="{{ b.description or '' }}">编辑</button>
+                        <form method="POST" action="{{ url_for('admin_board_delete', board_id=b.board_id) }}"
+                              class="d-inline delete-board-form" data-board-name="{{ b.board_name }}">
+                            <button class="btn btn-sm btn-outline-danger">删除</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 新增/编辑板块模态框 -->
+<div class="modal fade" id="board-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="board-form">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="board-modal-title">新增板块</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">板块名称（≤ 50 字）</label>
+                        <input type="text" name="board_name" id="board-name-input" class="form-control" maxlength="50" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">板块描述</label>
+                        <textarea name="description" id="board-desc-input" class="form-control" rows="3" maxlength="255"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary-custom">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 板块弹窗逻辑（外部化，见 static/js/admin.js） -->
+<script src="{{ url_for('static', filename='js/admin.js') }}?v=1.0.0"></script>
+{% endblock %}

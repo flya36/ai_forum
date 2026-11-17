@@ -1,0 +1,12 @@
+# 敏感词库（每行一个词，支持 # 注释；应用启动时加载到内存）
+# 匹配规则：大小写不敏感、全角/半角兼容、词内允许 0~3 个符号/空白分隔
+# 维护方式：直接编辑本文件后重启应用，或运行：
+#   venv\Scripts\python.exe backend\scripts\manage_sensitive_words.py add <词>
+#   venv\Scripts\python.exe backend\scripts\manage_sensitive_words.py remove <词>
+#   venv\Scripts\python.exe backend\scripts\manage_sensitive_words.py list
+
+敏感词
+色情
+赌博
+诈骗
+fuck

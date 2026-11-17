@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ target.nickname }}的{{ '好友' if mode == 'friends' else ('关注' if mode == 'following' else '粉丝') }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <a href="{{ url_for('user_profile', user_id=target.user_id) }}" class="back-link mb-2 d-inline-block"><i class="bi bi-arrow-left"></i> 返回{{ target.nickname }}的主页</a>
+        <div class="content-card">
+            <h5 class="mb-3">{{ target.nickname }}的{{ '好友（互相关注）' if mode == 'friends' else ('关注' if mode == 'following' else '粉丝') }}（共 {{ total }} 人）</h5>
+            {% for u in users %}
+            <div class="d-flex align-items-center py-2 border-bottom">
+                {% if u.avatar_path %}
+                <img src="{{ url_for('serve_avatar', filename=u.avatar_path) }}" class="avatar-sm me-2 rounded-circle" style="width:36px;height:36px;">
+                {% else %}
+                <div class="avatar-sm me-2 d-flex align-items-center justify-content-center bg-secondary text-white rounded-circle" style="width:36px;height:36px;font-size:15px;">{{ u.nickname[0] if u.nickname else '?' }}</div>
+                {% endif %}
+                <div class="flex-grow-1">
+                    <a href="{{ url_for('user_profile', user_id=u.user_id) }}" class="text-decoration-none">{{ u.nickname or u.username }}</a>
+                    {% if u.role == 1 %}<span class="badge bg-danger">管理员</span>{% endif %}
+                    {% if mode == 'friends' and u.friend_at %}
+                    <span class="text-muted small ms-2">好友于 {{ u.friend_at }}</span>
+                    {% endif %}
+                    <div class="text-muted small text-truncate" style="max-width:420px;">{{ u.signature or '' }}</div>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-4">暂无{{ '好友' if mode == 'friends' else ('关注' if mode == 'following' else '粉丝') }}</p>
+            {% endfor %}
+
+            {% set total_pages = ((total + page_size - 1) // page_size) if total else 1 %}
+            {% if total_pages > 1 %}
+            <div class="d-flex justify-content-center gap-2 mt-3">
+                {% if page > 1 %}
+                <a class="btn btn-sm btn-outline-secondary"
+                   href="{{ url_for('user_friends' if mode == 'friends' else ('user_following' if mode == 'following' else 'user_followers'), user_id=target.user_id, page=page - 1) }}">上一页</a>
+                {% endif %}
+                <span class="align-self-center small text-muted">第 {{ page }} / {{ total_pages }} 页</span>
+                {% if page < total_pages %}
+                <a class="btn btn-sm btn-outline-secondary"
+                   href="{{ url_for('user_friends' if mode == 'friends' else ('user_following' if mode == 'following' else 'user_followers'), user_id=target.user_id, page=page + 1) }}">下一页</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

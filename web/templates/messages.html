@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}我的消息{% endblock %}
+{% block content %}
+<div class="container py-3" style="max-width:820px;">
+    <div class="d-flex align-items-center mb-3">
+        <a href="{{ url_for('index') }}" class="text-decoration-none me-2"><i class="bi bi-arrow-left"></i></a>
+        <h5 class="mb-0">我的消息</h5>
+    </div>
+    <ul class="nav nav-pills mb-3" id="msg-center-tabs">
+        <li class="nav-item">
+            <a class="nav-link {{ 'active' if active_tab == 'private' else '' }}" data-msg-tab="private"
+               href="{{ url_for('messages_home', tab='private') }}">
+                <i class="bi bi-envelope"></i> 私信
+                <span class="badge bg-danger rounded-pill ms-1 msg-unread-badge"{% if unread_msg_count <= 0 %} style="display:none"{% endif %}>{{ unread_msg_count }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ 'active' if active_tab == 'system' else '' }}" data-msg-tab="system"
+               href="{{ url_for('messages_home', tab='system') }}">
+                <i class="bi bi-bell"></i> 系统通知
+                <span class="badge bg-danger rounded-pill ms-1 msg-notice-badge"{% if unread_count <= 0 %} style="display:none"{% endif %}>{{ unread_count }}</span>
+            </a>
+        </li>
+    </ul>
+
+    {% if active_tab == 'private' %}
+    <!-- 私信 Tab：会话列表（对方头像 + 昵称 + 摘要 + 时间 + 未读） -->
+    {% if not partners %}
+    <div class="content-card text-center text-muted py-5">
+        <i class="bi bi-envelope-open" style="font-size:3rem;"></i>
+        <div class="mt-2">暂无私信对话</div>
+        <div class="small">去用户主页点击"发私信"开始聊天</div>
+    </div>
+    {% else %}
+    <div class="content-card p-0">
+        <ul class="list-group list-group-flush">
+            {% for p in partners %}
+            <li class="list-group-item d-flex align-items-center">
+                <a class="text-decoration-none me-2" href="{{ url_for('user_profile', user_id=p.other_id) }}">
+                    {% if p.avatar_path %}
+                    <img src="{{ url_for('serve_avatar', filename=p.avatar_path) }}" class="rounded-circle"
+                         style="width:40px;height:40px;object-fit:cover;" alt="{{ p.nickname }}">
+                    {% else %}
+                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center"
+                         style="width:40px;height:40px;">{{ p.nickname[0] }}</div>
+                    {% endif %}
+                </a>
+                <a class="text-decoration-none text-reset flex-grow-1" href="{{ url_for('message_thread', user_id=p.other_id) }}">
+                    <div class="fw-bold">{{ p.nickname }}
+                        {% if p.unread > 0 %}<span class="badge bg-danger rounded-pill ms-1">{{ p.unread }}</span>{% endif %}
+                    </div>
+                    <div class="text-muted small text-truncate">
+                        {% if p.post_id %}<i class="bi bi-link-45deg text-success"></i> {% endif %}{{ p.content[:50] }}
+                    </div>
+                </a>
+                <div class="text-muted small ms-2">{{ p.created_at }}</div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- 系统通知 Tab：复用通知列表渲染（含各类型跳转） -->
+    <div class="content-card">
+        <h5 class="mb-3">系统通知</h5>
+        {% for n in notes %}
+        <div class="py-2 border-bottom">
+            <div class="small text-muted">{{ n.create_time[:16] }}</div>
+            {% if n.type == 'new_ticket' %}
+            <a class="mt-1 d-block" href="{{ url_for('admin') }}?tab=reports">{{ n.content }}</a>
+            {% elif n.type == 'mention' and n.post_id %}
+                {% if n.comment_id %}
+                <a class="mt-1 d-block" href="/post/{{ n.post_id }}#comment-{{ n.comment_id }}">{{ n.content }}</a>
+                {% else %}
+                <a class="mt-1 d-block" href="/post/{{ n.post_id }}">{{ n.content }}</a>
+                {% endif %}
+            {% elif n.type == 'comment_like' and n.post_id %}
+                {% if n.comment_id %}
+                <a class="mt-1 d-block" href="/post/{{ n.post_id }}#comment-{{ n.comment_id }}">{{ n.content }}</a>
+                {% else %}
+                <a class="mt-1 d-block" href="/post/{{ n.post_id }}">{{ n.content }}</a>
+                {% endif %}
+            {% elif n.type == 'follow' and n.from_user_id %}
+            <a class="mt-1 d-block" href="/user/{{ n.from_user_id }}">{{ n.content }}</a>
+            {% elif n.type == 'message' and n.from_user_id %}
+            <a class="mt-1 d-block" href="/messages/{{ n.from_user_id }}">{{ n.content }}</a>
+            {% elif n.type == 'share' and n.post_id %}
+            <a class="mt-1 d-block" href="/post/{{ n.post_id }}">{{ n.content }}</a>
+            {% else %}
+            <div class="mt-1">{{ n.content }}</div>
+            {% endif %}
+        </div>
+        {% else %}
+        <p class="text-muted text-center py-4">暂无通知</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/messages-center.js') }}?v=1.0.0"></script>
+{% endblock %}

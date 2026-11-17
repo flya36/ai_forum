@@ -1,0 +1,272 @@
+/* ============================================================
+ * 移动端适配（参照百度贴吧设计思路）
+ * 核心：双层信息架构 + 三 Tab 底部导航 + 双列网格 + 44px 触摸区
+ * 通过 base.html 引入；桌面端（>768px）不受影响
+ * ============================================================
+ */
+
+/* ===== 顶部导航：移动端折叠（汉堡 + 品牌 + 头像） ===== */
+.mobile-burger { display: none; }
+@media (max-width: 768px) {
+    .mobile-burger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        background: transparent;
+        border: none;
+    }
+    .desktop-search, .desktop-actions { display: none !important; }
+    .navbar-custom .navbar-brand {
+        margin-right: 0;
+        font-size: 16px;
+        white-space: nowrap;
+    }
+    /* 侧边栏抽屉宽度适配 */
+    .offcanvas.offcanvas-start#mobileSidebar { width: 85%; max-width: 300px; }
+}
+
+/* ===== 底部导航（移动端固定三 Tab：首页 / 消息 / 我的） ===== */
+.mobile-bottom-nav {
+    display: none;
+}
+@media (max-width: 768px) {
+    .mobile-bottom-nav {
+        display: flex;
+        position: fixed;
+        left: 0; right: 0; bottom: 0;
+        height: 58px;
+        background: #fff;
+        border-top: 1px solid var(--border);
+        z-index: 1100;   /* 高于页面内容与 bootstrap modal 之下的层 */
+        padding-bottom: env(safe-area-inset-bottom, 0);
+        box-shadow: 0 -1px 8px rgba(0,0,0,.05);
+    }
+    .mobile-bottom-nav a {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--gray);
+        font-size: 11px;
+        text-decoration: none;
+        min-height: 44px;
+        position: relative;
+        -webkit-tap-highlight-color: transparent;
+        transition: color .15s ease;
+    }
+    .mobile-bottom-nav a.active { color: var(--primary); font-weight: 600; }
+    .mobile-bottom-nav a i { font-size: 21px; margin-bottom: 2px; line-height: 1; }
+    .mobile-bottom-nav a .badge {
+        position: absolute;
+        top: 3px;
+        left: 50%;
+        margin-left: 4px;
+        font-size: 10px;
+        padding: 1px 5px;
+        line-height: 1.4;
+    }
+    /* 底部导航压住内容时留白（≥70px，确保最后一条内容不被遮挡） */
+    body { padding-bottom: 72px; }
+}
+
+/* ===== 首页双层架构：顶层信息流（双列网格） / 底层板块导航 ===== */
+@media (max-width: 768px) {
+    /* 移动端顺序：帖子列表(1) → 板块导航(2 底层)；右侧热门隐藏 */
+    .order-mobile-list { order: 1; }
+    .order-mobile-boards { order: 2; }
+    .hot-col { display: none !important; }
+
+    /* 帖子列表：窄屏单列（≤420px 完整展示），平板双列（421-768px） */
+    #post-list-area {
+        display: grid;
+        gap: 8px;
+        align-items: start;
+    }
+    #post-list-area > .post-card {
+        margin-bottom: 0;
+        padding: 12px;
+        min-width: 0;
+    }
+    #post-list-area > .post-card img {
+        max-width: 100% !important;
+        max-height: 96px !important;
+        width: 100%;
+        height: 96px;
+        object-fit: cover;
+        border-radius: 6px;
+    }
+    #post-list-area > .post-card .post-title {
+        font-size: 14px;
+        line-height: 1.35;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    #post-list-area > .post-card .post-meta {
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    #post-empty { grid-column: 1 / -1; }
+}
+@media (max-width: 420px) {
+    #post-list-area { grid-template-columns: 1fr; }
+}
+@media (min-width: 421px) and (max-width: 768px) {
+    #post-list-area { grid-template-columns: 1fr 1fr; }
+}
+
+/* ===== 底层板块导航：卡片式 2x2 网格（图标 + 板块名） ===== */
+@media (max-width: 768px) {
+    /* 板块区整体卡片化，与帖子列表视觉区隔 */
+    .order-mobile-boards .sidebar {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px;
+        margin-top: 4px;
+    }
+    .order-mobile-boards .sidebar .fw-bold {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text) !important;
+        padding: 0 2px;
+        margin-bottom: 10px;
+    }
+    .boards-mobile {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        padding: 0;
+        overflow: visible;
+    }
+    .boards-mobile .list-group-item {
+        flex: none;
+        width: 100%;
+        margin: 0;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-size: 13px;
+        text-decoration: none;
+        min-height: 48px;
+        display: inline-flex;
+        align-items: center;
+        white-space: normal;
+        word-break: break-word;
+    }
+    .boards-mobile .list-group-item.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .boards-mobile .list-group-item.active .board-ico { background: rgba(255,255,255,.25); color: #fff; }
+    .boards-mobile .list-group-item.text-primary { color: var(--primary); }
+    /* 板块图标（首字圆形徽标） */
+    .boards-mobile .board-ico {
+        flex: 0 0 auto;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #e6eeff;
+        color: var(--primary);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 600;
+        margin-right: 8px;
+    }
+    /* 申请/我的申请：特殊卡片（虚线边框 + 图标，与板块卡片样式统一） */
+    .boards-mobile .board-apply-row {
+        grid-column: 1 / -1;
+        border: 1px dashed var(--primary) !important;
+        background: #f0f4ff !important;
+        color: var(--primary) !important;
+        border-radius: 8px !important;
+        min-height: 48px;
+        font-size: 13px;
+        justify-content: flex-start;
+    }
+    .boards-mobile .board-apply-row .nav-icon { margin-right: 8px; }
+}
+
+/* ===== 触摸区域 ≥44x44px（移动端核心操作） ===== */
+@media (max-width: 768px) {
+    .comment-like-btn, .btn-report-open, .action-btn, .btn,
+    .list-group-item, .page-link, .post-title, .dropdown-item,
+    .md-editor-tabs button {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+    }
+    .comment-like-btn, .btn-report-open { min-width: 44px; }
+    .pagination .page-link { padding: 10px 16px; font-size: 14px; }
+    /* 发帖按钮等主操作放大 */
+    .btn-primary-custom { padding: 10px 20px; }
+}
+
+/* ===== 点赞/关注核心操作微动画（缩放 + 颜色过渡） ===== */
+.comment-like-btn i,
+.action-btn i,
+.btn-like-post i,
+.follow-btn i {
+    transition: color .15s ease, transform .1s ease;
+}
+.comment-like-btn:active,
+.action-btn:active,
+.btn-like-post:active,
+.follow-btn:active,
+.btn:active {
+    transform: scale(0.92);
+}
+
+/* ===== Markdown 编辑器：移动端编辑/预览 Tab 切换 ===== */
+.md-editor-tabs {
+    display: none;
+}
+@media (max-width: 640px) {
+    .md-editor-wrap { flex-direction: column; }
+    .md-editor-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+    .md-editor-tabs button {
+        flex: 1;
+        padding: 8px 0;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--card);
+        color: var(--gray);
+        font-size: 13px;
+        min-height: 40px;
+    }
+    .md-editor-tabs button.active {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: #fff;
+        font-weight: 600;
+    }
+}
+
+/* ===== 帖子详情页：移动端微调 ===== */
+@media (max-width: 768px) {
+    .content-card { padding: 14px; }
+    .comment-item .markdown-body { font-size: 14px; }
+    .comment-like-btn i { font-size: 16px; }
+}
+
+/* ===== 消息中心：移动端 Tab 视觉统一 ===== */
+@media (max-width: 768px) {
+    #msg-center-tabs .nav-link {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        font-size: 14px;
+    }
+}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}编辑帖子{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="content-card">
+            <h5 class="mb-4">编辑帖子</h5>
+            <form method="POST" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label class="form-label">所属板块</label>
+                    <select name="board_id" class="form-select">
+                        {% for b in boards %}
+                        <option value="{{ b.board_id }}" {% if b.board_id == post.board_id %}selected{% endif %}>{{ b.board_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">标题</label>
+                    <input type="text" name="title" class="form-control" value="{{ post.title }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">正文（支持 Markdown，回填原始文本可继续编辑）</label>
+                    <textarea name="content" class="form-control md-editor" rows="8" required>{{ post.content }}</textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">插入图片（不选则保留原图）</label>
+                    {% if post.image_path %}
+                    <div class="mb-2">
+                        <img src="{{ url_for('serve_post_image', filename=post.image_path) }}" class="border rounded" style="max-width:200px;">
+                        <span class="text-muted small ms-1">当前图片（上传新图将替换）</span>
+                    </div>
+                    {% endif %}
+                    <input type="file" name="image" class="form-control" accept="image/*">
+                </div>
+
+                <!-- 标签组件：选择已有 + 输入新标签（最多5个），与发帖页一致 -->
+                <div class="mb-3">
+                    <label class="form-label">标签（最多 5 个）</label>
+                    <input type="hidden" name="tags" id="tags-input" value="">
+                    <input type="hidden" id="initial-tags" value='{{ tags | map(attribute="tag_name") | list | tojson }}'>
+                    <div class="border rounded p-2 mb-2" style="min-height:44px;background:#fafbfc;">
+                        <div id="selected-tags" class="d-flex flex-wrap gap-1 align-items-center">
+                            <span class="text-muted small">尚未选择标签</span>
+                        </div>
+                    </div>
+                    <div class="input-group mb-2">
+                        <input type="text" id="new-tag-input" class="form-control"
+                               placeholder="输入新标签名，回车添加（已存在的标签会自动复用）"
+                               maxlength="50">
+                        <button type="button" class="btn btn-outline-primary" id="add-tag-btn">添加标签</button>
+                    </div>
+                    <div id="tag-suggest" class="list-group position-absolute" style="z-index:1000;display:none;max-height:200px;overflow:auto;"></div>
+                    {% if all_tags %}
+                    <div class="small text-muted mb-1">选择已有标签：</div>
+                    <div id="existing-tags" class="d-flex flex-wrap gap-1">
+                        {% for t in all_tags %}
+                        <button type="button" class="btn btn-sm btn-outline-secondary existing-tag"
+                                data-name="{{ t.tag_name }}"># {{ t.tag_name }}</button>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3 d-flex gap-4">
+                    <div class="form-check">
+                        <input type="checkbox" name="is_private" value="1" class="form-check-input" id="private" {% if post.is_private %}checked{% endif %}>
+                        <label class="form-check-label" for="private">私密帖（仅自己可见）</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" name="is_anonymous" value="1" class="form-check-input" id="anon" {% if post.is_anonymous %}checked{% endif %}>
+                        <label class="form-check-label" for="anon">匿名发布</label>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary-custom px-4">保存修改</button>
+                <a href="{{ url_for('post_detail', post_id=post.post_id) }}" class="btn btn-outline-secondary ms-2">取消</a>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/tag-editor.js') }}?v=1.0.0"></script>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}编辑资料{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <a href="javascript:history.back()" class="back-link mb-2 d-inline-block"><i class="bi bi-arrow-left"></i> 返回</a>
+        <div class="content-card">
+            <h5 class="mb-4">编辑个人资料</h5>
+            <form method="POST" enctype="multipart/form-data">
+                <div class="mb-3 text-center">
+                    {% if profile.avatar_path %}
+                    <img src="{{ url_for('serve_avatar', filename=profile.avatar_path) }}" class="rounded-circle mb-2" style="width:80px;height:80px;object-fit:cover;">
+                    {% else %}
+                    <div class="mx-auto mb-2 rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width:80px;height:80px;font-size:32px;">{{ profile.nickname[0] }}</div>
+                    {% endif %}
+                    <div>
+                        <label class="form-label small">更换头像</label>
+                        <input type="file" name="avatar" class="form-control form-control-sm" accept="image/*">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">昵称</label>
+                    <input type="text" name="nickname" class="form-control" value="{{ profile.nickname }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">个性签名</label>
+                    <textarea name="signature" class="form-control" rows="3">{{ profile.signature }}</textarea>
+                </div>
+                <button type="submit" class="btn btn-primary-custom px-4">保存</button>
+                <a href="{{ url_for('user_profile', user_id=current_user.user_id) }}" class="btn btn-outline-secondary ms-2">返回</a>
+            </form>
+        </div>
+        <div class="content-card mt-4">
+            <h5 class="mb-4">修改密码</h5>
+            <form method="POST" action="{{ url_for('change_password_route') }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-3">
+                    <label class="form-label">旧密码</label>
+                    <input type="password" name="old_password" class="form-control" autocomplete="current-password" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">新密码（至少 8 位）</label>
+                    <input type="password" name="new_password" class="form-control" autocomplete="new-password" minlength="8" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">确认新密码</label>
+                    <input type="password" name="confirm_password" class="form-control" autocomplete="new-password" minlength="8" required>
+                </div>
+                <button type="submit" class="btn btn-primary-custom px-4">修改密码</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 我的黑名单：展示已拉黑用户，支持解除 -->
+    <div class="content-card mt-3">
+        <h5 class="mb-3"><i class="bi bi-slash-circle"></i> 我的黑名单</h5>
+        {% if not block_list %}
+        <p class="text-muted small mb-0">暂无拉黑用户</p>
+        {% else %}
+        <ul class="list-group list-group-flush">
+            {% for b in block_list %}
+            <li class="list-group-item d-flex align-items-center px-0">
+                <a class="text-decoration-none text-reset flex-grow-1" href="{{ url_for('user_profile', user_id=b.user_id) }}">
+                    {% if b.avatar_path %}
+                    <img src="{{ url_for('serve_avatar', filename=b.avatar_path) }}" class="rounded-circle me-2"
+                         style="width:32px;height:32px;object-fit:cover;" alt="{{ b.nickname }}">
+                    {% else %}
+                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2 d-inline-flex"
+                         style="width:32px;height:32px;">{{ b.nickname[0] }}</div>
+                    {% endif %}
+                    {{ b.nickname }}
+                    <span class="text-muted small ms-2">@{{ b.username }} · 拉黑于 {{ b.created_at }}</span>
+                </a>
+                <button class="btn btn-outline-secondary btn-sm unblock-btn" data-target-id="{{ b.user_id }}">解除</button>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+</div>
+<script src="{{ url_for('static', filename='js/blocklist.js') }}?v=1.0.0"></script>
+{% endblock %}

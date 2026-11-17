@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}我的工单 - 技术社区{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="content-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">我的举报 / 申诉记录</h5>
+                <a href="{{ url_for('index') }}" class="back-link"><i class="bi bi-arrow-left"></i> 返回</a>
+            </div>
+            {% if tickets %}
+            <table class="table table-hover">
+                <thead><tr><th>ID</th><th>类型</th><th>分类</th><th>说明</th><th>状态</th><th>提交时间</th></tr></thead>
+                <tbody>
+                {% for t in tickets %}
+                <tr>
+                    <td>{{ t.id }}</td>
+                    <td>
+                        {% if t.target_type == 'appeal' %}账号申诉
+                        {% elif t.target_type == 'post' %}举报帖子
+                        {% else %}举报评论{% endif %}
+                    </td>
+                    <td>{{ t.category }}</td>
+                    <td class="text-truncate" style="max-width:260px;">{{ t.description or '-' }}</td>
+                    <td>
+                        {% if t.status == 'pending' %}<span class="badge bg-warning text-dark">待处理</span>
+                        {% elif t.status == 'resolved' %}<span class="badge bg-success">已处理</span>
+                        {% else %}<span class="badge bg-secondary">已驳回</span>{% endif %}
+                    </td>
+                    <td>{{ t.created_at[:16] }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center py-4">暂无举报/申诉记录</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

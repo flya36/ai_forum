@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}通知{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <a href="{{ url_for('index') }}" class="back-link mb-2 d-inline-block"><i class="bi bi-arrow-left"></i> 返回首页</a>
+        <div class="content-card">
+            <h5 class="mb-3">我的通知</h5>
+            {% for n in notes %}
+            <div class="py-2 border-bottom">
+                <div class="small text-muted">{{ n.create_time[:16] }}</div>
+                {% if n.type == 'new_ticket' %}
+                <a class="mt-1 d-block" href="{{ url_for('admin') }}?tab=reports">{{ n.content }}</a>
+                {% elif n.type == 'mention' and n.post_id %}
+                    {% if n.comment_id %}
+                    <a class="mt-1 d-block" href="/post/{{ n.post_id }}#comment-{{ n.comment_id }}">{{ n.content }}</a>
+                    {% else %}
+                    <a class="mt-1 d-block" href="/post/{{ n.post_id }}">{{ n.content }}</a>
+                    {% endif %}
+                {% elif n.type == 'comment_like' and n.post_id %}
+                {% if n.comment_id %}
+                <a class="mt-1 d-block" href="/post/{{ n.post_id }}#comment-{{ n.comment_id }}">{{ n.content }}</a>
+                {% else %}
+                <a class="mt-1 d-block" href="/post/{{ n.post_id }}">{{ n.content }}</a>
+                {% endif %}
+            {% elif n.type == 'follow' and n.from_user_id %}
+                <a class="mt-1 d-block" href="/user/{{ n.from_user_id }}">{{ n.content }}</a>
+                {% elif n.type == 'message' and n.from_user_id %}
+                <a class="mt-1 d-block" href="/messages/{{ n.from_user_id }}">{{ n.content }}</a>
+                {% elif n.type == 'share' and n.post_id %}
+                <a class="mt-1 d-block" href="/post/{{ n.post_id }}">{{ n.content }}</a>
+                {% else %}
+                <div class="mt-1">{{ n.content }}</div>
+                {% endif %}
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-4">暂无通知</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

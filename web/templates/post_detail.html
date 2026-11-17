@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }} - AI知识社区{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div id="post-page-meta" data-post-id="{{ post.post_id }}"></div>
+        <a href="{{ url_for('index') }}" class="back-link mb-2 d-inline-block"><i class="bi bi-arrow-left"></i> 返回首页</a>
+        <!-- 帖子卡片 -->
+        <div class="content-card">
+            <!-- 作者栏 -->
+            <div class="d-flex align-items-center mb-3">
+                {% if post.is_anonymous %}
+                <div class="avatar-md me-3 d-flex align-items-center justify-content-center bg-secondary text-white rounded-circle">匿</div>
+                <div>
+                    <div class="fw-bold text-muted">匿名用户</div>
+                    <div class="small text-muted">{{ post.board_name }} · {{ post.create_time[:16] }} · 浏览 {{ post.view_count }}</div>
+                </div>
+                {% else %}
+                {% if post.author_avatar %}
+                <img src="{{ url_for('serve_avatar', filename=post.author_avatar) }}" class="avatar-md me-3">
+                {% else %}
+                <div class="avatar-md me-3 d-flex align-items-center justify-content-center bg-secondary text-white rounded-circle">{{ post.author[0] }}</div>
+                {% endif %}
+                <div>
+                    <a href="{{ url_for('user_profile', user_id=post.author_id) }}" class="fw-bold text-decoration-none">{{ post.author }}</a>
+                    <div class="small text-muted">{{ post.board_name }} · {{ post.create_time[:16] }} · 浏览 {{ post.view_count }}</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- 标题 -->
+            <h4 class="mb-2">
+                {% if post.is_private %}<span class="tag-private">私密</span>{% endif %}
+                {% if post.is_anonymous %}<span class="tag-anon">匿名</span>{% endif %}
+                {{ post.title }}
+            </h4>
+
+            <!-- 标签展示：点击跳转该标签下的文章列表 -->
+            {% if tags %}
+            <div class="mb-3">
+                {% for t in tags %}
+                <a href="{{ url_for('tag_posts', tag_id=t.tag_id) }}"
+                   class="badge bg-light text-primary text-decoration-none me-1"
+                   style="font-weight:500;font-size:12.5px;"># {{ t.tag_name }}</a>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- 正文（服务端 Markdown 渲染 + XSS 白名单过滤后的安全 HTML） -->
+            <div class="markdown-body" style="line-height: 1.8;">{{ post.content }}</div>
+
+            <!-- 帖子图片（点击查看原图，新窗口；懒加载） -->
+            {% if post.image_path %}
+            <a href="{{ url_for('serve_post_image', filename=post.image_path) }}" target="_blank" rel="noopener">
+                <img src="{{ url_for('serve_post_image', filename=post.image_path) }}" class="img-fluid rounded mb-3" style="max-width:500px;" loading="lazy" alt="帖子配图">
+            </a>
+            {% endif %}
+
+            <!-- 互动栏 -->
+            <div class="border-top pt-3 mt-3">
+                <!-- 状态变更操作一律走 POST 表单，避免 GET 链接被预取/爬虫误触发；JS 增强为 AJAX 提交 -->
+                <form method="POST" id="like-form" action="{{ url_for('like_post', post_id=post.post_id) }}" class="d-inline">
+                    <button type="submit" class="action-btn btn border-0 p-0">
+                        <i class="bi {% if liked %}bi-hand-thumbs-up-fill text-primary{% else %}bi-hand-thumbs-up{% endif %}" id="like-icon"></i>
+                        <span id="like-text">点赞</span> (<span id="like-count">{{ post.like_count }}</span>)
+                    </button>
+                </form>
+                <form method="POST" id="favorite-form" action="{{ url_for('favorite_post', post_id=post.post_id) }}" class="d-inline">
+                    <button type="submit" class="action-btn btn border-0 p-0">
+                        <i class="bi {% if favorited %}bi-star-fill text-warning{% else %}bi-star{% endif %}" id="fav-icon"></i>
+                        <span id="fav-text">{{ '已收藏' if favorited else '收藏' }}</span> (<span id="fav-count">{{ post.favorite_count }}</span>)
+                    </button>
+                </form>
+                <button type="button" class="action-btn btn border-0 p-0 btn-share-open text-success ms-2"
+                        data-post-id="{{ post.post_id }}" title="分享给好友">
+                    <i class="bi bi-share"></i> 分享
+                </button>
+                <span class="mx-2 text-muted" style="opacity:.35;">|</span>
+                <button type="button" class="action-btn btn border-0 p-0 btn-report-open text-danger"
+                        data-target-type="post" data-target-id="{{ post.post_id }}"
+                        title="举报"><i class="bi bi-flag"></i> 举报</button>
+                {% if current_user and (current_user.user_id == post.author_id or current_user.role == 1) %}
+                <a href="{{ url_for('edit_post', post_id=post.post_id) }}" class="btn btn-sm btn-outline-primary">编辑</a>
+                {% endif %}
+                {% if current_user and current_user.user_id == post.author_id %}
+                <form method="POST" action="{{ url_for('delete_post_route', post_id=post.post_id) }}" class="d-inline confirm-delete"
+                      data-confirm-msg="确定删除这篇帖子？">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">删除帖子</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 评论输入 -->
+        <div class="content-card mt-3">
+            <form method="POST" id="comment-form" action="{{ url_for('add_comment_route', post_id=post.post_id) }}">
+                <div class="mb-2 fw-bold">发表评论</div>
+                <textarea name="content" class="form-control md-editor mb-2" rows="2" placeholder="写下你的评论...（支持 Markdown）" required></textarea>
+                <button type="submit" class="btn btn-primary-custom btn-sm">发表评论</button>
+            </form>
+        </div>
+
+        <!-- 评论列表 -->
+        <div class="content-card mt-3" id="comment-list">
+            <div class="fw-bold mb-2">全部评论 (<span id="comment-count">{{ comments|length }}</span>)</div>
+            {% for c in comments %}
+            <div class="comment-item d-flex" id="comment-{{ c.comment_id }}" data-comment-id="{{ c.comment_id }}">
+                {% if c.avatar_path %}
+                <img src="{{ url_for('serve_avatar', filename=c.avatar_path) }}" class="avatar-sm me-3">
+                {% else %}
+                <div class="avatar-sm me-3 d-flex align-items-center justify-content-center bg-secondary text-white rounded-circle">{{ c.nickname[0] }}</div>
+                {% endif %}
+                <div>
+                    <div class="small">
+                        <span class="text-muted">{{ c.floor }}楼</span>
+                        <a href="{{ url_for('user_profile', user_id=c.user_id) }}" class="fw-bold text-decoration-none ms-1">{{ c.nickname }}</a>
+                        <span class="text-muted ms-2">{{ c.create_time[:16] }}</span>
+                    </div>
+                    <div class="mt-1 markdown-body">{{ c.content }}</div>
+                    <div class="d-flex justify-content-between align-items-center mt-1">
+                        <button type="button"
+                                class="btn btn-sm btn-link p-0 text-decoration-none comment-like-btn"
+                                data-comment-id="{{ c.comment_id }}"
+                                data-liked="{{ 1 if c.liked else 0 }}"
+                                data-count="{{ c.like_count }}"
+                                title="{{ '取消点赞' if c.liked else '点赞' }}">
+                            <i class="bi {{ 'bi-heart-fill text-danger' if c.liked else 'bi-heart' }}"></i>
+                            <span class="comment-like-cnt ms-1">{{ c.like_count }}</span>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-link text-muted p-0 small btn-report-open"
+                                data-target-type="comment" data-target-id="{{ c.comment_id }}"
+                                title="举报"><i class="bi bi-flag"></i> 举报</button>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-3" id="comment-empty">暂无评论，快来抢沙发</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- ===== 分享弹窗：选择好友分享帖子（CSRF 字段显式注入） ===== -->
+<div class="modal fade" id="share-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="share-form">
+                <input type="hidden" name="post_id" value="{{ post.post_id }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">分享帖子给好友</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2 fw-bold">选择好友</div>
+                    <div id="share-friends-list" style="max-height:320px;overflow-y:auto;">
+                        <div class="text-muted text-center py-3" id="share-friends-loading">加载中...</div>
+                    </div>
+                    <button type="button" id="share-friends-more" class="btn btn-sm btn-outline-secondary w-100 mt-2 d-none">加载更多</button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-success" id="share-submit">分享</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 举报弹窗（共用：帖子/评论；CSRF 由 site-base.js 自动注入） ===== -->
+<div class="modal fade" id="report-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="report-form" action="{{ url_for('report_content') }}">
+                <input type="hidden" name="target_type" value="">
+                <input type="hidden" name="target_id" value="">
+                <div class="modal-header">
+                    <h5 class="modal-title">举报内容</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">举报类型</label>
+                        <select name="category" class="form-select">
+                            <option value="violation">违规</option>
+                            <option value="ad">广告</option>
+                            <option value="porn">色情</option>
+                            <option value="other">其他</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">补充说明（选填）</label>
+                        <textarea name="description" class="form-control" rows="3" maxlength="500"
+                                  placeholder="请简要描述举报原因"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-danger">提交举报</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SocketIO 实时更新：新评论推送 / 帖子删除同步（外部化，见 static/js/post-detail.js） ===== -->
+<script src="{{ url_for('static', filename='js/post-detail.js') }}?v=1.7.0"></script>
+{% endblock %}

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}技术社区{% endblock %}</title>
+    <link href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}?v=5.3.0" rel="stylesheet">
+    <link href="{{ url_for('static', filename='vendor/bootstrap-icons/bootstrap-icons.css') }}?v=1.10.0" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/mobile.css') }}?v=1.0.4" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4E6EF2;
+            --bg: #f5f6fa;
+            --card: #ffffff;
+            --text: #1e1e1e;
+            --gray: #787c82;
+            --border: #e8e9ef;
+        }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+        .navbar-custom { background: var(--primary) !important; padding: 8px 0; }
+        .navbar-custom .navbar-brand, .navbar-custom .nav-link { color: #fff !important; }
+        .navbar-custom .form-control::placeholder { color: rgba(255,255,255,.7); }
+        .sidebar { background: var(--card); border-radius: 8px; padding: 12px; }
+        .sidebar .list-group-item { border: none; border-radius: 6px; margin-bottom: 2px; padding: 8px 12px; }
+        .sidebar .list-group-item.active { background: #e6eeff; color: var(--primary); font-weight: 600; }
+        .nav-icon { width: 20px; text-align: center; }
+        .post-card { background: var(--card); border-radius: 8px; padding: 16px 20px; margin-bottom: 10px; border: 1px solid var(--border); transition: box-shadow .2s; }
+        .post-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+        .post-title { font-size: 16px; font-weight: 600; color: var(--text); text-decoration: none; }
+        .post-title:hover { color: var(--primary); }
+        .post-meta { font-size: 12px; color: var(--gray); margin-top: 4px; }
+        /* ===== 帖子卡片（贴吧风格）：作者行 / 标题 18px / 摘要 / 互动栏 ===== */
+        .post-card-author { gap: 8px; }
+        .post-avatar { width: 32px; height: 32px; object-fit: cover; }
+        .post-avatar-default { font-size: 13px; display: inline-flex; align-items: center; justify-content: center; }
+        .post-author-name { line-height: 1.3; }
+        .post-card-title { font-size: 18px; font-weight: 700; line-height: 1.35;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .post-summary { font-size: 14px; color: var(--gray); margin-top: 4px; line-height: 1.5;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+            word-break: break-word; }
+        .post-card-actions { gap: 14px; }
+        .post-card-actions .post-meta { margin-top: 0; }
+        .post-card-actions .post-meta i { margin-right: 3px; }
+        /* ===== 板块首字圆形图标（桌面+移动端共用；6 色按板块名 hash 稳定配色） ===== */
+        .board-ico {
+            flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%;
+            background: #e6eeff; color: #4E6EF2;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 600; margin-right: 8px;
+        }
+        .board-ico.c0 { background: #e6eeff; color: #4E6EF2; }
+        .board-ico.c1 { background: #e8f7ee; color: #1f9d61; }
+        .board-ico.c2 { background: #fff3e0; color: #d97b06; }
+        .board-ico.c3 { background: #f3e8ff; color: #8b5cf6; }
+        .board-ico.c4 { background: #ffe9e9; color: #e5484d; }
+        .board-ico.c5 { background: #e0f4f8; color: #0e9cc0; }
+        .avatar-sm { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+        .avatar-md { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
+        .tag-top { background: #fff3cd; color: #856404; font-size: 11px; padding: 1px 6px; border-radius: 3px; margin-right: 4px; }
+        .tag-essence { background: #ffe5d0; color: #d9534f; font-size: 11px; padding: 1px 6px; border-radius: 3px; margin-right: 4px; }
+        .tag-private { background: #e2e3e5; color: #6c757d; font-size: 11px; padding: 1px 6px; border-radius: 3px; margin-right: 4px; }
+        .tag-anon { background: #d1ecf1; color: #0c5460; font-size: 11px; padding: 1px 6px; border-radius: 3px; margin-right: 4px; }
+        .btn-primary-custom { background: var(--primary); border: none; color: #fff; }
+        .btn-primary-custom:hover { background: #3d5bd9; color: #fff; }
+        .content-card { background: var(--card); border-radius: 8px; padding: 24px; border: 1px solid var(--border); }
+        .action-btn { color: var(--gray); text-decoration: none; margin-right: 16px; font-size: 14px; }
+        .action-btn:hover { color: var(--primary); }
+        .comment-item { padding: 12px 0; border-bottom: 1px solid var(--border); }
+        .comment-item:last-child { border-bottom: none; }
+        .auth-card { max-width: 400px; margin: 80px auto; }
+        .back-link { color: var(--gray); text-decoration: none; font-size: 14px; }
+        .back-link:hover { color: var(--primary); }
+        .hot-list .hot-item { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+        .hot-list .hot-item:last-child { border-bottom: none; }
+        .hot-rank-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+        .hot-rank-title { font-size: 15px; }
+        .hot-rank { display: inline-block; width: 20px; height: 20px; line-height: 20px; text-align: center; border-radius: 4px; font-size: 12px; font-weight: 700; color: var(--gray); margin-right: 6px; vertical-align: 1px; }
+        .hot-rank-1 { background: #f5222d; color: #fff; }
+        .hot-rank-2 { background: #fa8c16; color: #fff; }
+        .hot-rank-3 { background: #fadb14; color: #7a5c00; }
+        .hot-rank-n { background: #f0f2f5; color: var(--gray); }
+        .hot-item-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: bottom; max-width: 150px; }
+        .hot-item { display: flex; align-items: center; gap: 4px; }
+        .hot-badge { flex-shrink: 0; background: #f5222d; color: #fff; font-size: 11px; line-height: 1; padding: 2px 5px; border-radius: 4px; font-weight: 600; }
+        .hot-count { flex-shrink: 0; margin-left: auto; color: var(--gray); font-size: 12px; }
+        .hot-more { text-align: right; margin-top: 8px; font-size: 13px; }
+        .hot-more a { color: var(--gray); text-decoration: none; }
+        .hot-more a:hover { color: var(--primary); }
+        .hot-rank-card .board-ico { width: 22px; height: 22px; font-size: 12px; flex-shrink: 0; margin-right: 4px; }
+        /* 实时推送相关 */
+        .net-tip { position: fixed; top: 12px; right: 12px; z-index: 2000; color: #fff; padding: 6px 14px; border-radius: 16px; font-size: 13px; opacity: .92; display: none; }
+        .new-post-banner { background: #e6eeff; color: var(--primary); border: 1px solid #c9d8ff; border-radius: 8px; padding: 10px 16px; margin-bottom: 10px; font-size: 14px; }
+        .new-post-banner a { cursor: pointer; font-weight: 600; }
+        .comment-flash { animation: commentFlash 1.8s ease-out 1; }
+        @keyframes commentFlash { 0% { background-color: #e6eeff; } 100% { background-color: transparent; } }
+        /* ===== Markdown 渲染样式（服务端 bleach 白名单过滤后的 HTML） ===== */
+        .markdown-body { word-break: break-word; }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3,
+        .markdown-body h4, .markdown-body h5, .markdown-body h6 { margin: 14px 0 8px; font-weight: 600; }
+        .markdown-body h1 { font-size: 1.5em; } .markdown-body h2 { font-size: 1.35em; }
+        .markdown-body h3 { font-size: 1.2em; } .markdown-body h4 { font-size: 1.05em; }
+        .markdown-body p { margin: 6px 0; }
+        .markdown-body pre { background: #f6f8fa; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; overflow-x: auto; font-size: 13px; }
+        .markdown-body code { background: #f0f1f4; border-radius: 4px; padding: 1px 5px; font-size: 13px; }
+        .markdown-body pre code { background: transparent; padding: 0; }
+        .markdown-body blockquote { border-left: 3px solid var(--primary); margin: 8px 0; padding: 4px 12px; color: var(--gray); background: #f7f8fc; }
+        .markdown-body ul, .markdown-body ol { padding-left: 24px; margin: 6px 0; }
+        .markdown-body table { border-collapse: collapse; margin: 8px 0; max-width: 100%; }
+        .markdown-body th, .markdown-body td { border: 1px solid var(--border); padding: 5px 10px; }
+        .markdown-body th { background: #f7f8fc; }
+        .markdown-body img { max-width: 100%; height: auto; border-radius: 6px; }
+        .markdown-body hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+        .markdown-body a { color: var(--primary); }
+        /* Markdown 编辑器：编辑区 + 实时预览（窄屏自动堆叠） */
+        .md-editor-wrap { display: flex; gap: 12px; align-items: stretch; }
+        .md-editor-wrap textarea { flex: 1 1 55%; min-width: 0; }
+        .md-preview { flex: 1 1 45%; min-width: 0; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; background: #fbfcfe; max-height: 320px; overflow-y: auto; font-size: 14px; }
+        @media (max-width: 640px) { .md-editor-wrap { flex-direction: column; } }
+    </style>
+    <script src="{{ url_for('static', filename='js/socket.io.min.js') }}?v=4.7.5"></script>
+</head>
+<body data-user-id="{{ current_user.user_id if current_user else '' }}"
+      data-msg-unread="{{ unread_msg_count if current_user else 0 }}"
+      data-msg-total="{{ (unread_msg_count + unread_count) if current_user else 0 }}">
+<nav class="navbar navbar-dark navbar-custom">
+    <div class="container-fluid d-flex align-items-center">
+        {% if current_user %}
+        <!-- 汉堡菜单（移动端显示，展开侧边栏抽屉） -->
+        <button type="button" class="btn mobile-burger me-1" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" aria-label="打开菜单">
+            <i class="bi bi-list" style="font-size:24px;color:#fff;line-height:1;"></i>
+        </button>
+        {% endif %}
+        <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">
+            <i class="bi bi-compass"></i> 技术社区
+        </a>
+        {% if current_user %}
+        <div class="desktop-search position-relative mx-auto" style="width:400px;">
+            <div class="input-group">
+                <input class="form-control" id="search-input" name="q" placeholder="搜索帖子..." autocomplete="off">
+                <button class="btn btn-light" type="button" id="search-btn-desktop"><i class="bi bi-search"></i></button>
+            </div>
+            <div id="search-dropdown" class="list-group position-absolute w-100" style="z-index:1000;top:38px;display:none;"></div>
+        </div>
+        <div class="desktop-actions d-flex align-items-center me-2">
+            <a href="{{ url_for('new_post') }}" class="btn btn-light btn-sm me-3">
+                <i class="bi bi-pencil-square"></i> 发帖
+            </a>
+            {% if current_user.role == 1 %}
+            <a href="{{ url_for('admin') }}" class="nav-link me-2">管理</a>
+            {% endif %}
+        </div>
+        <div class="ms-auto d-flex align-items-center">
+            <div class="dropdown">
+                <a class="nav-link dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown" href="#">
+                    {% if current_user.avatar_path %}
+                    <img src="{{ url_for('serve_avatar', filename=current_user.avatar_path) }}" class="rounded-circle" style="width:32px;height:32px;object-fit:cover;">
+                    {% else %}
+                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width:32px;height:32px;">{{ current_user.nickname[0] }}</div>
+                    {% endif %}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{{ url_for('user_profile', user_id=current_user.user_id) }}">个人中心</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('edit_profile') }}">编辑资料</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('messages_home') }}">我的消息
+                        <span class="badge bg-danger rounded-pill ms-1 msg-total-badge"{% if unread_msg_count + unread_count <= 0 %} style="display:none"{% endif %}>{{ unread_msg_count + unread_count }}</span></a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('my_favorites') }}">我的收藏</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('my_board_applications') }}">我的板块申请</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('ai_ask') }}"><i class="bi bi-robot"></i> AI 智能问答</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="{{ url_for('logout') }}">退出登录</a></li>
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</nav>
+
+{% if current_user %}
+<!-- ===== 移动端侧边栏抽屉（汉堡菜单展开；搜索/发帖/管理/导航全收于此） ===== -->
+<div class="offcanvas offcanvas-start" tabindex="-1" id="mobileSidebar" aria-labelledby="mobileSidebarLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="mobileSidebarLabel"><i class="bi bi-compass"></i> 技术社区</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="关闭"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="mb-3">
+            <div class="input-group">
+                <input class="form-control" id="search-input-mobile" placeholder="搜索帖子..." autocomplete="off">
+                <button class="btn btn-primary" type="button" id="search-btn-mobile"><i class="bi bi-search"></i></button>
+            </div>
+        </div>
+        <div class="list-group list-group-flush">
+            <a class="list-group-item list-group-item-action" href="{{ url_for('new_post') }}"><i class="bi bi-pencil-square nav-icon"></i> 发帖</a>
+            {% if current_user.role == 1 %}
+            <a class="list-group-item list-group-item-action" href="{{ url_for('admin') }}"><i class="bi bi-gear nav-icon"></i> 管理后台</a>
+            {% endif %}
+            <a class="list-group-item list-group-item-action" href="{{ url_for('user_profile', user_id=current_user.user_id) }}"><i class="bi bi-person nav-icon"></i> 个人中心</a>
+            <a class="list-group-item list-group-item-action" href="{{ url_for('edit_profile') }}"><i class="bi bi-person-gear nav-icon"></i> 编辑资料</a>
+            <a class="list-group-item list-group-item-action" href="{{ url_for('messages_home') }}"><i class="bi bi-bell nav-icon"></i> 我的消息
+                <span class="badge bg-danger rounded-pill ms-1 msg-total-badge"{% if unread_msg_count + unread_count <= 0 %} style="display:none"{% endif %}>{{ unread_msg_count + unread_count }}</span>
+            </a>
+            <a class="list-group-item list-group-item-action" href="{{ url_for('my_favorites') }}"><i class="bi bi-star nav-icon"></i> 我的收藏</a>
+            <a class="list-group-item list-group-item-action" href="{{ url_for('my_board_applications') }}"><i class="bi bi-list-check nav-icon"></i> 我的板块申请</a>
+            <a class="list-group-item list-group-item-action" href="{{ url_for('ai_ask') }}"><i class="bi bi-robot nav-icon"></i> AI 智能问答</a>
+            <a class="list-group-item list-group-item-action text-danger" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right nav-icon"></i> 退出登录</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="container-fluid mt-3">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for cat, msg in messages %}
+    <div class="alert alert-{{ 'danger' if cat == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+        {{ msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</div>
+
+<script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}?v=5.3.0"></script>
+<script src="{{ url_for('static', filename='js/site-base.js') }}?v=1.5.0"></script>
+<script src="{{ url_for('static', filename='js/md-editor.js') }}?v=1.1.0"></script>
+{% block scripts %}{% endblock %}
+
+{% if current_user %}
+<!-- ===== 移动端底部导航（三 Tab：首页 / 消息 / 我的；桌面端隐藏） ===== -->
+<nav class="mobile-bottom-nav" aria-label="移动端底部导航">
+    <a href="{{ url_for('index') }}"
+       class="{% if request.endpoint == 'index' %}active{% endif %}">
+        <i class="bi bi-house-door"></i><span>首页</span>
+    </a>
+    <a href="{{ url_for('messages_home') }}"
+       class="{% if request.endpoint in ('messages_home', 'message_thread') %}active{% endif %}">
+        <i class="bi bi-bell"></i><span>消息</span>
+        <span class="badge bg-danger rounded-pill msg-total-badge"{% if unread_msg_count + unread_count <= 0 %} style="display:none"{% endif %}>{{ unread_msg_count + unread_count }}</span>
+    </a>
+    <a href="{{ url_for('user_profile', user_id=current_user.user_id) }}"
+       class="{% if request.endpoint == 'user_profile' %}active{% endif %}">
+        <i class="bi bi-person"></i><span>我的</span>
+    </a>
+</nav>
+{% endif %}
+</body>
+</html>

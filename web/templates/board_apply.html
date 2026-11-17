@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}申请新板块{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        {% if not hide_form %}
+        <div class="content-card mb-3">
+            <h5 class="mb-3">申请新板块</h5>
+            <form method="POST" action="{{ url_for('board_apply') }}">
+                <div class="mb-3">
+                    <label class="form-label">板块名称（≤ 50 字）</label>
+                    <input type="text" name="board_name" class="form-control" maxlength="50" required
+                           placeholder="如：考研交流">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">板块描述 / 申请说明</label>
+                    <textarea name="description" class="form-control" rows="3" maxlength="255"
+                              placeholder="这个板块的主题是什么？为什么需要它？"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary-custom px-4">提交申请</button>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary ms-2">返回首页</a>
+            </form>
+            <div class="small text-muted mt-2">
+                提交后由管理员审核，通过后板块立即生效；同一板块已有待审核申请时不可重复提交。
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="content-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">我的申请</h5>
+                {% if hide_form %}
+                <a href="{{ url_for('board_apply') }}" class="btn btn-sm btn-outline-primary">去申请</a>
+                {% endif %}
+            </div>
+            {% if applications %}
+            <table class="table table-hover align-middle">
+                <thead><tr><th>板块名称</th><th>状态</th><th>申请时间</th><th>审核时间</th><th>备注</th></tr></thead>
+                <tbody>
+                {% for a in applications %}
+                <tr>
+                    <td>{{ a.board_name }}</td>
+                    <td>
+                        {% if a.status == 0 %}<span class="badge bg-warning text-dark">待审核</span>
+                        {% elif a.status == 1 %}<span class="badge bg-success">已通过</span>
+                        {% else %}<span class="badge bg-danger">已驳回</span>{% endif %}
+                    </td>
+                    <td class="small text-muted">{{ a.apply_time[:16] }}</td>
+                    <td class="small text-muted">{{ a.review_time[:16] if a.review_time else '-' }}</td>
+                    <td class="small">{{ a.reject_reason if a.reject_reason else ('-' if a.status != 1 else '板块已创建，可直接发帖') }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center py-4">还没有申请记录{% if not hide_form %}，填写上方表单提交第一个申请{% endif %}</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

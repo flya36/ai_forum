@@ -1,0 +1,10 @@
+{# 管理侧边栏菜单（统一维护，避免各模板复制漏项导致菜单丢失） #}
+{# 用法：{% set active_tab = 'tags' %}（或沿用 tab 变量）后 {% include '_admin_sidebar.html' %} #}
+{% set active_tab = active_tab|default('') %}
+<a href="{{ url_for('admin', tab='posts') }}" class="list-group-item list-group-item-action {% if active_tab == 'posts' %}active{% endif %}">帖子管理</a>
+<a href="{{ url_for('admin', tab='users') }}" class="list-group-item list-group-item-action {% if active_tab == 'users' %}active{% endif %}">用户管理</a>
+<a href="{{ url_for('admin', tab='comments') }}" class="list-group-item list-group-item-action {% if active_tab == 'comments' %}active{% endif %}">评论管理</a>
+<a href="{{ url_for('admin', tab='reports') }}" class="list-group-item list-group-item-action {% if active_tab == 'reports' %}active{% endif %}">审核队列</a>
+<a href="{{ url_for('admin_tags') }}" class="list-group-item list-group-item-action {% if active_tab == 'tags' %}active{% endif %}">标签管理</a>
+<a href="{{ url_for('admin_boards') }}" class="list-group-item list-group-item-action {% if active_tab == 'boards' %}active{% endif %}">板块管理</a>
+<a href="{{ url_for('admin_board_applications') }}" class="list-group-item list-group-item-action {% if active_tab == 'board_applications' %}active{% endif %}">板块申请审核</a>

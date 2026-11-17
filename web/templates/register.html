@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}注册 - 技术社区{% endblock %}
+{% block content %}
+<div class="auth-card">
+    <div class="content-card">
+        <h4 class="text-center mb-4">注册新账号</h4>
+        <form method="POST">
+            <div class="mb-3">
+                <label class="form-label">用户名</label>
+                <input type="text" name="username" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">昵称（可选，默认同用户名）</label>
+                <input type="text" name="nickname" class="form-control">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">密码（至少6位）</label>
+                <input type="password" name="password" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary-custom w-100 py-2">注册</button>
+        </form>
+        <p class="text-center mt-3 mb-0 text-muted">已有账号？<a href="{{ url_for('login') }}">去登录</a></p>
+    </div>
+</div>
+{% endblock %}

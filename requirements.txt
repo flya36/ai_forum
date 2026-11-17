@@ -1,0 +1,15 @@
+pyodbc>=5.0.0
+Flask>=2.3.0
+Flask-SocketIO>=5.3.6
+gevent>=26.0.0
+gevent-websocket>=0.10.1
+flask-compress>=1.13
+Pillow>=10.0.0
+markdown>=3.5
+bleach>=6.0
+
+# 语义搜索：本地向量库 + 本地 embedding
+chromadb>=1.5.0
+sentence-transformers>=3.0.0
+
+filelock==3.32.7
